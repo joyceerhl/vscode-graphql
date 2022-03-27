@@ -36,6 +36,8 @@
     "onCommand:vscode-graphql.isDebugging",
     "onCommand:vscode-graphql.contentProvider",
     "onLanguage:graphql",
+    "onCommand:vscode-graphql.createNotebook",
+    "onNotebook:gqlnb",
     "workspaceContains:**/.graphqlrc",
     "workspaceContains:**/.graphqlrc.{json,yaml,yml,js,ts,toml}",
     "workspaceContains:**/graphql.config.{json,yaml,yml,js,ts,toml}",
@@ -207,6 +209,32 @@
       {
         "command": "vscode-graphql.contentProvider",
         "title": "VSCode GraphQL: Execute GraphQL Operations"
+      },
+      {
+        "command": "vscode-graphql.createNotebook",
+        "title": "Create New GraphQL Notebook",
+        "shortTitle": "GraphQL Notebook",
+        "category": "GraphQL"
+      }
+    ],
+    "menus": {
+      "file/newFile": [
+        {
+          "command": "vscode-graphql.createNotebook",
+          "group": "notebook"
+        }
+      ]
+    },
+    "notebooks": [
+      {
+        "type": "gqlnb",
+        "displayName": "GraphQL Notebook",
+        "priority": "default",
+        "selector": [
+          {
+            "filenamePattern": "*.gqlnb"
+          }
+        ]
       }
     ]
   },

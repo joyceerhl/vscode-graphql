@@ -9,6 +9,10 @@ import {
   languages,
   Uri,
   ViewColumn,
+  notebooks,
+  NotebookCellOutput,
+  NotebookCellOutputItem,
+  NotebookCellExecution,
 } from "vscode"
 import {
   LanguageClient,
@@ -22,8 +26,9 @@ import statusBarItem, { initStatusBar } from "./status"
 
 import { GraphQLContentProvider } from "./client/graphql-content-provider"
 import { GraphQLCodeLensProvider } from "./client/graphql-codelens-provider"
-import { ExtractedTemplateLiteral } from "./client/source-helper"
+import { ExtractedTemplateLiteral, SourceHelper } from "./client/source-helper"
 import { CustomInitializationFailedHandler } from "./CustomInitializationFailedHandler"
+import { NotebookSerializer } from "./client/notebook-serializer"
 
 function getConfig() {
   return workspace.getConfiguration(
@@ -120,6 +125,60 @@ export function activate(context: ExtensionContext) {
     },
   )
   context.subscriptions.push(commandShowOutputChannel)
+
+  const serializer = new NotebookSerializer()
+	context.subscriptions.push(workspace.registerNotebookSerializer('gqlnb', serializer))
+
+	const commandCreateNotebook = commands.registerCommand('vscode-graphql.createNotebook', async () => {
+		const data = serializer.createNew()
+		const notebookDocument = await workspace.openNotebookDocument('gqlnb', data)
+		await commands.executeCommand('vscode.openWith', notebookDocument.uri, 'gqlnb')
+	})
+  context.subscriptions.push(commandCreateNotebook)
+
+  async function replaceOutput(task: NotebookCellExecution, jsonData: string) {
+    const parsed = JSON.parse(jsonData);
+    const stringified = JSON.stringify(parsed['data'], undefined, 4);
+    const data = Buffer.from(stringified);
+    const item = new NotebookCellOutputItem(data, 'text/x-json');
+    const output = new NotebookCellOutput([item]);
+    await task.replaceOutput(output);
+  }  
+
+  notebooks.createNotebookController('GraphQL', 'gqlnb', 'GraphQL', async (cells, notebook, controller) => {
+    const sourceHelper = new SourceHelper(outputChannel);
+    for (const cell of cells) {
+      const literals = sourceHelper.extractAllTemplateLiterals(cell.document);
+      for (const literal of literals) {
+        const task = controller.createNotebookCellExecution(cell);
+        task.start(Date.now());
+        let success = false
+        try {
+          const uri = Uri.parse("graphql://authority/graphql")
+  
+          const contentProvider = new GraphQLContentProvider(
+            uri,
+            outputChannel,
+            literal,
+          )
+
+          await contentProvider.loadProvider(async (data, operation) => {
+            if (operation === "subscription") { // TODO: how do we know when a subscription has finished?
+              const item = new NotebookCellOutputItem(Buffer.from(data), 'text/x-json');
+              await task.appendOutputItems(item, cell.outputs[cell.outputs.length - 1]);
+            } else {
+              success = true
+              await replaceOutput(task, data);
+              task.end(success, Date.now());
+            }
+          });
+        } catch (e) {
+          success = false
+          task.end(success, Date.now())
+        }
+      }
+    }
+  });
 
   // Manage Status Bar
   context.subscriptions.push(statusBarItem)
