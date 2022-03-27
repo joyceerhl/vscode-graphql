@@ -27,7 +27,7 @@ export class GraphQLContentProvider implements TextDocumentContentProvider {
   private outputChannel: OutputChannel
   private networkHelper: NetworkHelper
   private sourceHelper: SourceHelper
-  private panel: WebviewPanel
+  private panel: WebviewPanel | undefined
   private rootDir: WorkspaceFolder | undefined
   private literal: ExtractedTemplateLiteral
 
@@ -45,6 +45,7 @@ export class GraphQLContentProvider implements TextDocumentContentProvider {
   }
 
   updatePanel() {
+    if (!this.panel) return
     this.panel.webview.html = this.html
   }
 
@@ -93,7 +94,7 @@ export class GraphQLContentProvider implements TextDocumentContentProvider {
     uri: Uri,
     outputChannel: OutputChannel,
     literal: ExtractedTemplateLiteral,
-    panel: WebviewPanel,
+    panel?: WebviewPanel,
   ) {
     this.uri = uri
     this.outputChannel = outputChannel
@@ -105,15 +106,17 @@ export class GraphQLContentProvider implements TextDocumentContentProvider {
     this.panel = panel
     this.rootDir = workspace.getWorkspaceFolder(Uri.file(literal.uri))
     this.literal = literal
-    this.panel.webview.options = {
-      enableScripts: true,
+    if (this.panel) {
+      this.panel.webview.options = {
+        enableScripts: true,
+      }
+      this.loadProvider()
+        .then()
+        .catch(err => {
+          this.html = err.toString()
+        })
     }
 
-    this.loadProvider()
-      .then()
-      .catch(err => {
-        this.html = err.toString()
-      })
   }
   validUrlFromSchema(pathOrUrl: string) {
     return Boolean(pathOrUrl.match(/^https?:\/\//g))
@@ -175,7 +178,7 @@ export class GraphQLContentProvider implements TextDocumentContentProvider {
     const endpointName = await this.getEndpointName(endpointNames)
     return endpoints[endpointName] || endpoints.default
   }
-  async loadProvider() {
+  async loadProvider(updateCallback?: (data: string, operation: string) => void) {
     try {
       const rootDir = workspace.getWorkspaceFolder(Uri.file(this.literal.uri))
       if (!rootDir) {
@@ -197,7 +200,7 @@ export class GraphQLContentProvider implements TextDocumentContentProvider {
             },
           })
 
-          const updateCallback = (data: string, operation: string) => {
+          updateCallback = updateCallback ?? ((data: string, operation: string) => {
             if (operation === "subscription") {
               this.html = `<pre>${escapeHtml(data)}</pre>` + this.html
             } else {
@@ -205,7 +208,7 @@ export class GraphQLContentProvider implements TextDocumentContentProvider {
             }
             this.update(this.uri)
             this.updatePanel()
-          }
+          })
 
           if (variableDefinitionNodes.length > 0) {
             const variables = await this.getVariablesFromUser(
