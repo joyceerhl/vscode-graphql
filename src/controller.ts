@@ -67,7 +67,7 @@ export class ControllerManager implements Disposable {
         controller = notebooks.createNotebookController(
           id,
           "gqlnb",
-          endpoint.endpointName,
+          `${endpoint.project} - ${endpoint.endpointName}`,
         )
 
         controller.executeHandler = (cells, notebook, controller) => this.execute(cells, notebook, controller);
