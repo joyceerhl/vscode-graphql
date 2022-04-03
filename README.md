@@ -13,7 +13,7 @@ Run and execute GraphQL queries and mutations in a VS Code notebook interface âœ
 
 ## Usage
 
-Install the [VS Code GraphQL Notebooks Extension](https://marketplace.visualstudio.com/items?itemName=joyceerhl.vscode-graphql-notebook).
+Install the [VS Code GraphQL Notebooks Extension](https://marketplace.visualstudio.com/items?itemName=joyceerhl.vscode-graphql-notebook) and the [VS Code GraphQL Extension](https://marketplace.visualstudio.com/items?itemName=graphql.vscode-graphql).
 
 **This extension requires a graphql-config file**.
 

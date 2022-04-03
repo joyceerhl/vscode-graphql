@@ -11,14 +11,11 @@
     "color": "#032539",
     "theme": "dark"
   },
-  "extensionPack": [
-    "graphql.vscode-graphql"
-  ],
   "keywords": [
     "graphql",
     "Notebooks"
   ],
-  "version": "0.1.2",
+  "version": "0.1.3",
   "engines": {
     "vscode": "^1.65.0"
   },
