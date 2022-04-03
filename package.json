@@ -27,9 +27,6 @@
     "onNotebook:gqlnb",
     "onCommand:gqlnb.createNew"
   ],
-  "enabledApiProposals": [
-    "notebookControllerKind"
-  ],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [

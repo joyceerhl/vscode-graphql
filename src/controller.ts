@@ -72,7 +72,7 @@ export class ControllerManager implements Disposable {
         )
 
         controller.executeHandler = (cells, notebook, controller) => this.execute(cells, notebook, controller);
-        controller.kind = endpoint.project
+        // controller.kind = endpoint.project
         controller.supportedLanguages = ['graphql']
         this.configurations.set(id, { endpoint: endpoint.endpointData, projectConfig: endpoint.projectConfig });
 
