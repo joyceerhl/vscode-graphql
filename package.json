@@ -16,6 +16,10 @@
   "engines": {
     "vscode": "^1.65.0"
   },
+  "repository": {
+    "url": "https://github.com/joyceerhl/vscode-graphql-notebook"
+  },
+  "preview": true,
   "categories": [
     "Notebooks"
   ],
