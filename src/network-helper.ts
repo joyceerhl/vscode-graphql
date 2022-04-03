@@ -22,7 +22,7 @@ import {
   GraphQLScalarTSType,
 } from "./source-helper"
 
-type UserVariables = { [key: string]: GraphQLScalarTSType }
+export type UserVariables = { [key: string]: GraphQLScalarTSType }
 
 export class NetworkHelper {
   private outputChannel: OutputChannel

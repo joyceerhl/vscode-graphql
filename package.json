@@ -12,7 +12,7 @@
     "graphql",
     "Notebooks"
   ],
-  "version": "0.0.1",
+  "version": "0.1.0",
   "engines": {
     "vscode": "^1.65.0"
   },
@@ -33,7 +33,7 @@
       {
         "command": "gqlnb.createNew",
         "title": "Create New GraphQL Notebook",
-        "shortTitle": "GraphQL Notebook",
+        "shortTitle": "GraphQL",
         "category": "GraphQL"
       }
     ],
@@ -48,7 +48,7 @@
     "notebooks": [
       {
         "type": "gqlnb",
-        "displayName": "GraphQL Notebook",
+        "displayName": "Execute GraphQL query and mutation",
         "priority": "default",
         "selector": [
           {

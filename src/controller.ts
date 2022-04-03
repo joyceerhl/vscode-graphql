@@ -15,8 +15,7 @@ import {
 import { EndpointsManager } from "./endpoints"
 import { SourceHelper } from "./source-helper";
 import { visit, VariableDefinitionNode } from "graphql"
-import { NetworkHelper } from "./network-helper"
-import { UserVariables } from "./graphql-content-provider";
+import { NetworkHelper, UserVariables } from "./network-helper"
 import { Endpoint } from "graphql-config/extensions/endpoints";
 import { GraphQLProjectConfig } from "graphql-config";
 
@@ -121,7 +120,7 @@ export class ControllerManager implements Disposable {
               variableDefinitionNodes,
             )
 
-            
+
             await this.networkHelper.executeOperation({
               endpoint,
               literal: literal,
