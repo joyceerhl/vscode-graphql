@@ -19,9 +19,11 @@ import {
   ExtractedTemplateLiteral,
   SourceHelper,
   getFragmentDependenciesForAST,
+  GraphQLScalarTSType,
 } from "./source-helper"
 
-import { UserVariables } from "./graphql-content-provider"
+type UserVariables = { [key: string]: GraphQLScalarTSType }
+
 export class NetworkHelper {
   private outputChannel: OutputChannel
   private sourceHelper: SourceHelper
