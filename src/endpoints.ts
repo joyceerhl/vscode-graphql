@@ -56,10 +56,6 @@ export class EndpointsManager {
       )
     }
 
-    if (schemas === undefined) {
-      return
-    }
-
     for (const schema of schemas) {
       if (Boolean(schema.match(/^https?:\/\//g))) {
         return {
