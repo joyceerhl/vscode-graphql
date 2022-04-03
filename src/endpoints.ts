@@ -5,7 +5,8 @@ import { Endpoint, Endpoints } from "graphql-config/extensions/endpoints"
 export class EndpointsManager {
   async getConfiguredEndpoints(notebookDocument: NotebookDocument) {
     const result: {
-      project: string
+      project: string,
+      projectConfig: GraphQLProjectConfig,
       configDirPath: string
       endpointName: string
       endpointData: Endpoint
@@ -33,6 +34,7 @@ export class EndpointsManager {
     for (const endpoint of Object.keys(endpoints)) {
       result.push({
         project: projectConfig.name,
+        projectConfig: projectConfig,
         configDirPath: config.dirpath,
         endpointName: endpoint,
         endpointData: endpoints[endpoint],
