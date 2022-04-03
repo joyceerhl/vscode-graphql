@@ -6,14 +6,6 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Attach to Server",
-      "type": "node",
-      "request": "attach",
-      "port": 6009,
-      "sourceMaps": true,
-      "outFiles": ["${workspaceRoot}/client/server/**/*.js"]
-    },
-    {
       "name": "Extension",
       "type": "extensionHost",
       "request": "launch",
@@ -21,7 +13,7 @@
       "args": ["--extensionDevelopmentPath=${workspaceFolder}"],
       "outFiles": ["${workspaceFolder}/out/extension.js"],
       "sourceMaps": true,
-      "preLaunchTask": "npm: compile"
+      "preLaunchTask": "npm: watch"
     },
     {
       "name": "Extension Tests",
