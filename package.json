@@ -1,13 +1,19 @@
 {
   "name": "vscode-graphql-notebook",
   "publisher": "joyceerhl",
+  "author": {
+    "name": "Joyce Er"
+  },
   "displayName": "GraphQL Notebook",
   "license": "MIT",
-  "description": "Run and save GraphQL queries and mutations",
+  "description": "Run and save GraphQL queries and mutations in VS Code notebooks",
   "galleryBanner": {
     "color": "#032539",
     "theme": "dark"
   },
+  "extensionDependencies": [
+    "graphql.vscode-graphql"
+  ],
   "keywords": [
     "graphql",
     "Notebooks"
