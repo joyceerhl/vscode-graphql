@@ -70,7 +70,7 @@
     "compile": "npm run compile:node && npm run compile:web",
     "compile:node": "esbuild ./src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node",
     "compile:web": "esbuild ./src/browser/extension.ts --bundle --outfile=out/browser/extension.js --external:vscode --format=cjs",
-    "build": "npm run compile -- --sourcemap",
+    "build": "npm run compile:node --sourcemap && npm run compile:web --sourcemap",
     "watch": "npm run build --watch",
     "test": "npm run compile && node ./node_modules/vscode/bin/test",
     "vsce:package": "vsce package",
