@@ -13,28 +13,31 @@ import {
   workspace,
 } from "vscode"
 import { EndpointsManager } from "./endpoints"
-import { SourceHelper } from "./source-helper";
+import { SourceHelper } from "./source-helper"
 import { visit, VariableDefinitionNode } from "graphql"
 import { NetworkHelper, UserVariables } from "./network-helper"
-import { Endpoint } from "graphql-config/extensions/endpoints";
-import { GraphQLProjectConfig } from "graphql-config";
+import { Endpoint } from "graphql-config/extensions/endpoints"
+import { GraphQLProjectConfig } from "graphql-config"
 
 export class ControllerManager implements Disposable {
   private controllers = new Map<string, NotebookController>()
-  private configurations = new Map<string, { endpoint: Endpoint, projectConfig: GraphQLProjectConfig }>();
+  private configurations = new Map<
+    string,
+    { endpoint: Endpoint; projectConfig: GraphQLProjectConfig }
+  >()
   private disposables: Disposable[] = []
-  private endpoints: EndpointsManager;
-  private sourceHelper: SourceHelper;
-  private networkHelper: NetworkHelper;
+  private endpoints: EndpointsManager
+  private sourceHelper: SourceHelper
+  private networkHelper: NetworkHelper
 
   constructor() {
     const outputChannel: OutputChannel = window.createOutputChannel(
       "GraphQL Notebooks",
     )
 
-    this.endpoints = new EndpointsManager();
-    this.sourceHelper = new SourceHelper(outputChannel);
-    this.networkHelper = new NetworkHelper(outputChannel, this.sourceHelper);
+    this.endpoints = new EndpointsManager()
+    this.sourceHelper = new SourceHelper(outputChannel)
+    this.networkHelper = new NetworkHelper(outputChannel, this.sourceHelper)
 
     this.disposables.push(
       workspace.onDidOpenNotebookDocument(async notebookDocument => {
@@ -70,10 +73,13 @@ export class ControllerManager implements Disposable {
           `${endpoint.project} - ${endpoint.endpointName}`,
         )
 
-        controller.executeHandler = (cells, notebook, controller) => this.execute(cells, notebook, controller);
-        // controller.kind = endpoint.project
-        controller.supportedLanguages = ['graphql']
-        this.configurations.set(id, { endpoint: endpoint.endpointData, projectConfig: endpoint.projectConfig });
+        controller.executeHandler = (cells, notebook, controller) =>
+          this.execute(cells, notebook, controller)
+        controller.supportedLanguages = ["graphql"]
+        this.configurations.set(id, {
+          endpoint: endpoint.endpointData,
+          projectConfig: endpoint.projectConfig,
+        })
 
         this.controllers.set(id, controller)
       }
@@ -87,28 +93,52 @@ export class ControllerManager implements Disposable {
     }
   }
 
-  private async execute(cells: NotebookCell[], notebook: NotebookDocument, controller: NotebookController) {
+  private async execute(
+    cells: NotebookCell[],
+    notebook: NotebookDocument,
+    controller: NotebookController,
+  ) {
     for (const cell of cells) {
-      const literals = this.sourceHelper.extractAllTemplateLiterals(cell.document);
-      for (const literal of literals) {
-        const task = controller.createNotebookCellExecution(cell);
-        task.start(Date.now());
-        let success = false
+      const task = controller.createNotebookCellExecution(cell)
+      task.start(Date.now())
+      let success = false
 
-        const updateCallback = async (data, operation) => {
-          if (operation === "subscription") { // TODO: how do we know when a subscription has finished?
-            const item = new NotebookCellOutputItem(Buffer.from(data), 'text/x-json');
-            await task.appendOutputItems(item, cell.outputs[cell.outputs.length - 1]);
-          } else {
-            success = true
-            await this.replaceOutput(task, data);
-            task.end(success, Date.now());
+      // Clear any existing cell output if rerunning
+      task.clearOutput(cell)
+
+      try {
+        const literals = this.sourceHelper.extractAllTemplateLiterals(
+          cell.document,
+        )
+
+        if (literals.length === 0) {
+          task.end(success, Date.now())
+        }
+
+        for (let i = 0; i < literals.length; i += 1) {
+          const literal = literals[i]
+          const updateCallback = async (data, operation) => {
+            if (operation === "subscription") {
+              // TODO: how do we know when a subscription has finished?
+              await this.appendOutput(task, data)
+            } else {
+              if (!data.startsWith("Error")) {
+                success = true
+                await this.appendOutput(task, data)
+              } else {
+                await this.reportError(task, new Error(data))
+              }
+
+              if (i === literals.length - 1) {
+                task.end(success, Date.now())
+              }
+            }
           }
-        };
 
-        try {
           let variableDefinitionNodes: VariableDefinitionNode[] = []
-          const { endpoint, projectConfig } = this.configurations.get(controller.id)!;
+          const { endpoint, projectConfig } = this.configurations.get(
+            controller.id,
+          )!
           visit(literal.ast, {
             VariableDefinition(node: VariableDefinitionNode) {
               variableDefinitionNodes.push(node)
@@ -119,7 +149,6 @@ export class ControllerManager implements Disposable {
             const variables = await this.getVariablesFromUser(
               variableDefinitionNodes,
             )
-
 
             await this.networkHelper.executeOperation({
               endpoint,
@@ -137,21 +166,39 @@ export class ControllerManager implements Disposable {
               projectConfig,
             })
           }
-        } catch (e) {
-          success = false
-          task.end(success, Date.now())
         }
+      } catch (e) {
+        success = false
+        await this.reportError(
+          task,
+          e instanceof Error ? e : new Error(e as string),
+        )
+        task.end(success, Date.now())
       }
     }
   }
 
-  private async replaceOutput(task: NotebookCellExecution, jsonData: string) {
-    const parsed = JSON.parse(jsonData);
-    const stringified = JSON.stringify(parsed['data'], undefined, 4);
-    const data = Buffer.from(stringified);
-    const item = new NotebookCellOutputItem(data, 'text/x-json');
-    const output = new NotebookCellOutput([item]);
-    await task.replaceOutput(output);
+  private async appendOutput(task: NotebookCellExecution, jsonData: string) {
+    function createItem() {
+      try {
+        const parsed = JSON.parse(jsonData)
+        const stringified = JSON.stringify(parsed["data"], undefined, 4)
+        const data = Buffer.from(stringified)
+        return new NotebookCellOutputItem(data, "text/x-json")
+      } catch (ex) {
+        return NotebookCellOutputItem.error(ex as Error)
+      }
+    }
+
+    const item = createItem()
+    const output = new NotebookCellOutput([item])
+    await task.appendOutput(output)
+  }
+
+  private async reportError(task: NotebookCellExecution, error: Error) {
+    const item = NotebookCellOutputItem.error(error)
+    const output = new NotebookCellOutput([item])
+    await task.replaceOutput(output)
   }
 
   private async getVariablesFromUser(
@@ -159,8 +206,9 @@ export class ControllerManager implements Disposable {
   ): Promise<UserVariables> {
     let variables = {}
     for (let node of variableDefinitionNodes) {
-      const variableType =
-        this.sourceHelper.getTypeForVariableDefinitionNode(node)
+      const variableType = this.sourceHelper.getTypeForVariableDefinitionNode(
+        node,
+      )
       variables = {
         ...variables,
         [`${node.variable.name.value}`]: this.sourceHelper.typeCast(
